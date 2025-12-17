@@ -2,9 +2,43 @@ import React from 'react';
 import {
     X,
     Gamepad2,
-    Ticket
+    Ticket,
+    Wallet,
+    Gift,
+    Trophy,
+    ChevronDown
 } from 'lucide-react';
 import { Customer } from '../types';
+
+interface AccordionItemProps {
+    title: string;
+    icon: React.ReactNode;
+    children: React.ReactNode;
+}
+
+const AccordionItem: React.FC<AccordionItemProps> = ({ title, icon, children }) => {
+    const [isOpen, setIsOpen] = React.useState(false);
+
+    return (
+        <div className="border border-slate-800 rounded-lg overflow-hidden">
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="w-full flex items-center justify-between p-3 bg-slate-800/30 hover:bg-slate-800/50 transition-colors text-left"
+            >
+                <div className="flex items-center gap-2 text-sm font-medium text-slate-300">
+                    <span className="text-slate-500">{icon}</span>
+                    {title}
+                </div>
+                <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {isOpen && (
+                <div className="p-3 bg-slate-900/50 border-t border-slate-800 animate-slide-in-top">
+                    {children}
+                </div>
+            )}
+        </div>
+    );
+};
 
 interface PlayerInfoPanelProps {
     customer: Customer;
@@ -81,13 +115,57 @@ export const PlayerInfoPanel: React.FC<PlayerInfoPanelProps> = ({ customer, onCl
                     </div>
                 </div>
 
-                <div>
-                    <h4 className="text-xs font-bold text-gray-500 uppercase mb-3 text-left tracking-wider">Recent History</h4>
-                    {/* Placeholder for ticket history */}
-                    <div className="py-8 bg-slate-800/30 rounded-xl border border-dashed border-gray-700 flex flex-col items-center justify-center text-gray-500 gap-2">
-                        <Ticket className="w-8 h-8 opacity-20" />
-                        <span className="text-xs">No recent tickets found</span>
-                    </div>
+                {/* Accordion Sections */}
+                <div className="space-y-2">
+                    <AccordionItem title="Transactions" icon={<Wallet className="w-4 h-4" />}>
+                        <div className="space-y-2">
+                            {[...Array(5)].map((_, i) => (
+                                <div key={i} className="flex justify-between items-center text-xs p-2 bg-slate-800/50 rounded">
+                                    <span className="text-gray-300">Deposit (BTC)</span>
+                                    <span className="text-green-400 font-mono">+$500.00</span>
+                                </div>
+                            ))}
+                            <a href="#" target="_blank" className="block text-center text-xs text-blue-400 hover:text-blue-300 mt-2">View All &gt;</a>
+                        </div>
+                    </AccordionItem>
+
+                    <AccordionItem title="Bonuses" icon={<Gift className="w-4 h-4" />}>
+                        <div className="space-y-2">
+                            <div className="flex justify-between items-center text-xs p-2 bg-slate-800/50 rounded border-l-2 border-green-500">
+                                <span className="text-gray-300">Welcome Bonus</span>
+                                <span className="text-green-400">Active</span>
+                            </div>
+                            <div className="flex justify-between items-center text-xs p-2 bg-slate-800/50 rounded border-l-2 border-gray-600">
+                                <span className="text-gray-500">Reload Bonus</span>
+                                <span className="text-gray-500">Expired</span>
+                            </div>
+                            <a href="#" target="_blank" className="block text-center text-xs text-blue-400 hover:text-blue-300 mt-2">View All &gt;</a>
+                        </div>
+                    </AccordionItem>
+
+                    <AccordionItem title="Casino Games" icon={<Gamepad2 className="w-4 h-4" />}>
+                        <div className="space-y-2">
+                            {[...Array(5)].map((_, i) => (
+                                <div key={i} className="flex justify-between items-center text-xs p-2 bg-slate-800/50 rounded">
+                                    <span className="text-gray-300">Sweet Bonanza</span>
+                                    <span className="text-gray-500">x45 spins</span>
+                                </div>
+                            ))}
+                            <a href="#" target="_blank" className="block text-center text-xs text-blue-400 hover:text-blue-300 mt-2">View All &gt;</a>
+                        </div>
+                    </AccordionItem>
+
+                    <AccordionItem title="Sports Bets" icon={<Trophy className="w-4 h-4" />}>
+                        <div className="space-y-2">
+                            {[...Array(3)].map((_, i) => (
+                                <div key={i} className="flex justify-between items-center text-xs p-2 bg-slate-800/50 rounded">
+                                    <span className="text-gray-300">Man City vs Arsenal</span>
+                                    <span className="text-gray-500">Pending</span>
+                                </div>
+                            ))}
+                            <a href="#" target="_blank" className="block text-center text-xs text-blue-400 hover:text-blue-300 mt-2">View All &gt;</a>
+                        </div>
+                    </AccordionItem>
                 </div>
             </div>
         </div>

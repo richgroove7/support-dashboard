@@ -15,12 +15,14 @@ interface ChatViewProps {
     chat: TicketModel;
     onCloseTab: () => void;
     onConvertToTicket: () => void;
+    docked?: boolean;
 }
 
 const ChatView: React.FC<ChatViewProps> = ({
     chat,
     onCloseTab,
-    onConvertToTicket
+    onConvertToTicket,
+    docked
 }) => {
     // Chat Logic State
     const [message, setMessage] = useState('');
@@ -69,7 +71,7 @@ const ChatView: React.FC<ChatViewProps> = ({
         <div className="flex h-full bg-[#0f172a] overflow-hidden">
             {/* Main Chat Area */}
             <div className="flex-1 flex flex-col min-w-0 border-r border-slate-800">
-
+                {/* ... existing Main Chat Area content ... */}
                 {/* Messages Area */}
                 <div
                     ref={scrollRef}
@@ -161,84 +163,86 @@ const ChatView: React.FC<ChatViewProps> = ({
             </div>
 
             {/* Right Side Panel - Context */}
-            <div className="w-80 bg-slate-900 border-l border-slate-800 p-6 overflow-y-auto hidden xl:block">
-                <div className="text-center mb-6">
-                    <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-xl mx-auto mb-4 border-4 border-slate-800">
-                        {chat.customer.avatar}
-                    </div>
-                    <h2 className="text-xl font-bold">{chat.customer.name}</h2>
-                    <p className="text-sm text-slate-400 mt-1">{chat.customer.email}</p>
-                    <div className="flex justify-center gap-2 mt-3">
-                        <span className="px-2 py-1 bg-yellow-500/10 text-yellow-400 text-xs rounded border border-yellow-500/20 font-medium flex items-center gap-1">
-                            <Crown className="w-3 h-3" /> {chat.customer.vipLevel}
-                        </span>
-                        <span className="px-2 py-1 bg-slate-800 text-slate-400 text-xs rounded border border-slate-700 font-medium">
-                            {chat.customer.country}
-                        </span>
-                    </div>
-                </div>
-
-                <div className="space-y-6">
-                    <div>
-                        <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Customer Details</h3>
-                        <div className="space-y-3">
-                            <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
-                                <div className="flex items-center gap-2 text-sm text-slate-300">
-                                    <User className="w-4 h-4 text-slate-500" /> ID
-                                </div>
-                                <span className="font-mono text-xs text-slate-400">{chat.customer.id}</span>
-                            </div>
-                            <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
-                                <div className="flex items-center gap-2 text-sm text-slate-300">
-                                    <Shield className="w-4 h-4 text-slate-500" /> Balance
-                                </div>
-                                <span className="font-mono text-sm text-green-400 font-bold">${chat.customer.balance.toLocaleString()}</span>
-                            </div>
-                            <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
-                                <div className="flex items-center gap-2 text-sm text-slate-300">
-                                    <Calendar className="w-4 h-4 text-slate-500" /> Joined
-                                </div>
-                                <span className="text-sm text-slate-400">Dec 2024</span>
-                            </div>
+            {!docked && (
+                <div className="w-80 bg-slate-900 border-l border-slate-800 p-6 overflow-y-auto hidden xl:block">
+                    <div className="text-center mb-6">
+                        <div className="w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-xl mx-auto mb-4 border-4 border-slate-800">
+                            {chat.customer.avatar}
+                        </div>
+                        <h2 className="text-xl font-bold">{chat.customer.name}</h2>
+                        <p className="text-sm text-slate-400 mt-1">{chat.customer.email}</p>
+                        <div className="flex justify-center gap-2 mt-3">
+                            <span className="px-2 py-1 bg-yellow-500/10 text-yellow-400 text-xs rounded border border-yellow-500/20 font-medium flex items-center gap-1">
+                                <Crown className="w-3 h-3" /> {chat.customer.vipLevel}
+                            </span>
+                            <span className="px-2 py-1 bg-slate-800 text-slate-400 text-xs rounded border border-slate-700 font-medium">
+                                {chat.customer.country}
+                            </span>
                         </div>
                     </div>
 
-                    <div>
-                        <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Ticket Info</h3>
-                        <div className="space-y-3">
-                            <div className="p-3 bg-slate-800/50 rounded-lg">
-                                <div className="text-xs text-slate-500 mb-1">Subject</div>
-                                <div className="text-sm font-medium">{chat.title}</div>
-                            </div>
-                            <div className="flex gap-2">
-                                <div className="flex-1 p-3 bg-slate-800/50 rounded-lg text-center">
-                                    <div className="text-xs text-slate-500 mb-1">Priority</div>
-                                    <div className={`text-sm font-bold capitalize ${chat.priority === 'critical' ? 'text-red-400' : 'text-blue-400'
-                                        }`}>{chat.priority}</div>
+                    <div className="space-y-6">
+                        <div>
+                            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Customer Details</h3>
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
+                                    <div className="flex items-center gap-2 text-sm text-slate-300">
+                                        <User className="w-4 h-4 text-slate-500" /> ID
+                                    </div>
+                                    <span className="font-mono text-xs text-slate-400">{chat.customer.id}</span>
                                 </div>
-                                <div className="flex-1 p-3 bg-slate-800/50 rounded-lg text-center">
-                                    <div className="text-xs text-slate-500 mb-1">Wait Time</div>
-                                    <div className="text-sm font-mono text-slate-300">{chat.waitingTime}</div>
+                                <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
+                                    <div className="flex items-center gap-2 text-sm text-slate-300">
+                                        <Shield className="w-4 h-4 text-slate-500" /> Balance
+                                    </div>
+                                    <span className="font-mono text-sm text-green-400 font-bold">${chat.customer.balance.toLocaleString()}</span>
+                                </div>
+                                <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
+                                    <div className="flex items-center gap-2 text-sm text-slate-300">
+                                        <Calendar className="w-4 h-4 text-slate-500" /> Joined
+                                    </div>
+                                    <span className="text-sm text-slate-400">Dec 2024</span>
                                 </div>
                             </div>
                         </div>
+
+                        <div>
+                            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Ticket Info</h3>
+                            <div className="space-y-3">
+                                <div className="p-3 bg-slate-800/50 rounded-lg">
+                                    <div className="text-xs text-slate-500 mb-1">Subject</div>
+                                    <div className="text-sm font-medium">{chat.title}</div>
+                                </div>
+                                <div className="flex gap-2">
+                                    <div className="flex-1 p-3 bg-slate-800/50 rounded-lg text-center">
+                                        <div className="text-xs text-slate-500 mb-1">Priority</div>
+                                        <div className={`text-sm font-bold capitalize ${chat.priority === 'critical' ? 'text-red-400' : 'text-blue-400'
+                                            }`}>{chat.priority}</div>
+                                    </div>
+                                    <div className="flex-1 p-3 bg-slate-800/50 rounded-lg text-center">
+                                        <div className="text-xs text-slate-500 mb-1">Wait Time</div>
+                                        <div className="text-sm font-mono text-slate-300">{chat.waitingTime}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={onConvertToTicket}
+                            className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                        >
+                            <Tag className="w-4 h-4" /> Convert to Ticket
+                        </button>
+
+                        <button
+                            onClick={onCloseTab}
+                            className="w-full py-2.5 bg-slate-800 hover:bg-red-900/20 border border-slate-700 hover:border-red-900/30 rounded-lg text-sm text-gray-400 hover:text-red-400 font-medium transition-colors"
+                        >
+                            Close Tab
+                        </button>
                     </div>
-
-                    <button
-                        onClick={onConvertToTicket}
-                        className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
-                    >
-                        <Tag className="w-4 h-4" /> Convert to Ticket
-                    </button>
-
-                    <button
-                        onClick={onCloseTab}
-                        className="w-full py-2.5 bg-slate-800 hover:bg-red-900/20 border border-slate-700 hover:border-red-900/30 rounded-lg text-sm text-gray-400 hover:text-red-400 font-medium transition-colors"
-                    >
-                        Close Tab
-                    </button>
                 </div>
-            </div>
+            )}
         </div>
     );
 };

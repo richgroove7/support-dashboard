@@ -10,6 +10,7 @@ import FiltersBar from './components/FiltersBar';
 import ChatSystem, { ChatSystemRef } from './components/ChatSystem';
 import { PlayerInfoPanel } from './components/PlayerInfoPanel';
 import demoData from './data/demoTickets.json';
+import ChatView from './components/ChatView';
 import { Ticket } from './types';
 
 // Cast demo data to Ticket[] because JSON sorted imports might infer narrower types
@@ -65,6 +66,9 @@ function App() {
       resolved: ticketsData.filter(t => t.status === 'resolved').length
     };
   }, []);
+
+  // Dock mode state
+  const [isDockMode, setIsDockMode] = useState(false);
 
   // Filter logic
   const filteredTickets = useMemo(() => {
@@ -141,11 +145,12 @@ function App() {
   // Handler for when the user clicks the CHIP or ROW -> We want to restore/open the window
   const handleRestoreChat = (ticket: Ticket) => {
     setSelectedTicket(ticket);
-    chatSystemRef.current?.restoreWindow(ticket.id);
+    // Only float if NOT in dock mode
+    if (!isDockMode) {
+      chatSystemRef.current?.restoreWindow(ticket.id);
+    }
   };
 
-  // Handler for when the window reports it got focused -> We just update our selection state
-  // We DO NOT call restoreWindow back, that causes the loop
   const handleWindowFocus = (ticket: Ticket) => {
     setSelectedTicket(ticket);
   };
@@ -159,69 +164,88 @@ function App() {
     // Logic to convert would go here
   };
 
+  // Logic for List Column Width
+  // Default: Full width (flex-1)
+  // If Info Open (Standard): 75% -> w-3/4
+  // If Dock Open (Docked): 50% -> w-1/2
+  // We use explicit width classes to ensure the split is correct.
+  const getListColumnClass = () => {
+    if (selectedTicket) {
+      if (isDockMode) return 'w-1/2'; // Dock mode = 50%
+      return 'w-3/4'; // Standard mode with info = 75%
+    }
+    return 'w-full'; // No info selected
+  };
+
   return (
-    <div className="min-h-screen bg-[#0f172a] text-white flex">
-      {/* Removed Sidebar */}
-
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col min-h-screen w-0">
-        {/* Header */}
-        <header className="h-16 border-b border-gray-800 bg-slate-900/50 backdrop-blur-xl sticky top-0 z-10 flex items-center justify-between px-6">
-          <div className="flex items-center gap-4 flex-1">
-            <div className="relative flex-1 max-w-lg group">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-400 transition-colors w-4 h-4" />
-              <input
-                type="text"
-                placeholder="Search tickets, players, or issues..."
-                className="w-full bg-slate-800/50 border border-gray-700 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-blue-500 focus:bg-slate-800 transition-all font-sans"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-
-            {/* Added Grid and Close All Controls Here in Header */}
-            {activeChats.length > 0 && (
-              <div className="flex items-center gap-2 border-l border-gray-700 pl-4 ml-2">
-                <button
-                  onClick={handleOrganizeGrid}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-blue-400 rounded-lg text-xs font-medium transition-colors border border-slate-700"
-                  title="Organize Grid"
-                >
-                  <LayoutGrid className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Grid</span>
-                </button>
-                <button
-                  onClick={handleCloseAll}
-                  className="px-3 py-1.5 bg-slate-800 hover:bg-red-900/20 text-red-400 rounded-lg text-xs font-medium transition-colors border border-slate-700"
-                >
-                  Close All
-                </button>
-              </div>
-            )}
+    <div className="h-screen bg-[#0f172a] text-white flex flex-col overflow-hidden">
+      {/* Header - Fixed Height, Flex None */}
+      <header className="h-16 flex-none border-b border-gray-800 bg-slate-900/50 backdrop-blur-xl z-20 flex items-center justify-between px-6">
+        <div className="flex items-center gap-4 flex-1">
+          <div className="relative flex-1 max-w-lg group">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-400 transition-colors w-4 h-4" />
+            <input
+              type="text"
+              placeholder="Search tickets, players, or issues..."
+              className="w-full bg-slate-800/50 border border-gray-700 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-blue-500 focus:bg-slate-800 transition-all font-sans"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
 
-          <div className="flex items-center gap-4">
-            <button className="relative p-2 rounded-lg hover:bg-slate-800 transition-colors">
-              <Bell className="w-5 h-5 text-gray-400" />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-slate-900"></span>
-            </button>
-            <div className="flex items-center gap-3 pl-4 border-l border-gray-800">
-              <div className="text-right hidden sm:block">
-                <p className="text-sm font-medium">Alex Morgan</p>
-                <p className="text-xs text-gray-400">Support Admin</p>
-              </div>
-              <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center font-bold text-sm border-2 border-slate-800 shadow-lg">
-                AM
-              </div>
+          {/* Controls */}
+          {activeChats.length > 0 && (
+            <div className="flex items-center gap-2 border-l border-gray-700 pl-4 ml-2">
+              <button
+                onClick={() => setIsDockMode(!isDockMode)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 ${isDockMode ? 'bg-blue-600/20 text-blue-400 border-blue-500/50' : 'bg-slate-800 text-gray-400 border-slate-700'} hover:bg-slate-700 rounded-lg text-xs font-medium transition-colors border`}
+              >
+                <span className="hidden sm:inline">Dock Chats</span>
+              </button>
+              <button
+                onClick={handleOrganizeGrid}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-blue-400 rounded-lg text-xs font-medium transition-colors border border-slate-700"
+                title="Organize Grid"
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Grid</span>
+              </button>
+              <button
+                onClick={handleCloseAll}
+                className="px-3 py-1.5 bg-slate-800 hover:bg-red-900/20 text-red-400 rounded-lg text-xs font-medium transition-colors border border-slate-700"
+              >
+                Close All
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center gap-4">
+          <button className="relative p-2 rounded-lg hover:bg-slate-800 transition-colors">
+            <Bell className="w-5 h-5 text-gray-400" />
+            <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-slate-900"></span>
+          </button>
+          <div className="flex items-center gap-3 pl-4 border-l border-gray-800">
+            <div className="text-right hidden sm:block">
+              <p className="text-sm font-medium">Alex Morgan</p>
+              <p className="text-xs text-gray-400">Support Admin</p>
+            </div>
+            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center font-bold text-sm border-2 border-slate-800 shadow-lg">
+              AM
             </div>
           </div>
-        </header>
+        </div>
+      </header>
 
-        {/* Dashboard Content */}
-        <div className="flex flex-1 overflow-hidden">
-          <div className="flex-1 p-6 space-y-4 overflow-y-auto min-w-0">
+      {/* Main Content Body - Flex 1, Overflow Hidden */}
+      <main className="flex-1 flex overflow-hidden w-full relative">
+
+        {/* Left Column (List) */}
+        <div className={`${getListColumnClass()} flex flex-col border-r border-gray-800 transition-all duration-300 bg-[#0f172a]`}>
+          {/* Header / Filters Area - Non-scrolling */}
+          <div className="flex-none p-6 pb-2 space-y-4">
             {/* Filters */}
-            <div className="flex flex-col gap-4 mb-4">
+            <div className="flex flex-col gap-4">
               <div className="flex items-center justify-between">
                 <FiltersBar
                   filters={filterState}
@@ -232,15 +256,13 @@ function App() {
 
               {/* Active Chats Bar */}
               {activeChats.length > 0 && (
-                <div className="flex flex-wrap items-center gap-2 p-3 bg-slate-800/50 border border-slate-700/50 rounded-lg">
-                  <span className="text-xs font-semibold text-gray-400 px-2 uppercase tracking-wider shrink-0 w-full sm:w-auto mb-1 sm:mb-0">
+                <div className="flex flex-col gap-2 p-3 bg-slate-800/50 border border-slate-700/50 rounded-lg">
+                  <span className="text-xs font-semibold text-gray-400 px-1 uppercase tracking-wider">
                     Active Sessions ({activeChats.length})
                   </span>
 
-                  <div className="h-4 w-px bg-gray-700 mx-2 shrink-0 hidden sm:block"></div>
-
                   {/* Wrapper for chips */}
-                  <div className="flex flex-wrap items-center gap-2 flex-1">
+                  <div className="flex flex-wrap items-center gap-2 w-full">
                     {activeChats.map(chat => (
                       <div
                         key={chat.id}
@@ -251,7 +273,10 @@ function App() {
                         {/* Chip */}
                         <button
                           onClick={() => handleRestoreChat(chat)}
-                          className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 border border-slate-600 hover:border-blue-500 rounded text-xs text-gray-300 hover:text-white transition-all group-hover:shadow-md"
+                          className={`flex items-center gap-2 px-3 py-1.5 border hover:border-blue-500 rounded text-xs transition-all group-hover:shadow-md ${selectedTicket?.id === chat.id
+                            ? 'bg-blue-600/20 border-blue-500 text-white'
+                            : 'bg-slate-800 border-slate-600 text-gray-300 hover:text-white'
+                            }`}
                         >
                           <div className={`w-1.5 h-1.5 rounded-full ${chat.status === 'resolved' ? 'bg-gray-500' : 'bg-green-500 animate-pulse'}`}></div>
                           <span className="max-w-[120px] truncate">{chat.customer.name}</span>
@@ -281,10 +306,13 @@ function App() {
                 </div>
               )}
             </div>
+          </div>
 
+          {/* Table Area - Scrollable */}
+          <div className="flex-1 overflow-y-auto px-6 pb-6 min-h-0">
             {/* Tickets Table Header */}
             <div className="bg-slate-800/80 border border-gray-700/50 rounded-xl overflow-hidden shadow-2xl backdrop-blur-sm">
-              <div className="flex items-center gap-4 p-3 border-b border-gray-700 bg-slate-900/50 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              <div className="flex items-center gap-4 p-3 border-b border-gray-700 bg-slate-900/50 text-xs font-semibold text-gray-400 uppercase tracking-wider sticky top-0 z-10">
                 <div className="w-16 text-center">Priority</div>
                 <div className="w-20">ID</div>
                 <div className="w-48">Customer</div>
@@ -319,24 +347,38 @@ function App() {
               </div>
             </div>
           </div>
-
-          {/* Split Screen Panel */}
-          {selectedTicket && (
-            <div className="w-96 border-l border-gray-800 bg-slate-900 shadow-xl overflow-hidden flex flex-col z-20 transition-all duration-300">
-              <PlayerInfoPanel
-                customer={selectedTicket.customer}
-                onClose={() => setSelectedTicket(null)}
-                isstatic={true}
-              />
-            </div>
-          )}
         </div>
+
+        {/* Middle Column (Docked Chat) - 25% */}
+        {isDockMode && selectedTicket && selectedTicket.type === 'chat' && (
+          <div className="w-1/4 flex flex-col border-r border-slate-800 bg-slate-900 z-10">
+            <ChatView
+              chat={selectedTicket}
+              onCloseTab={() => handleEndSession(selectedTicket.id)}
+              onConvertToTicket={() => handleConvertToTicket(selectedTicket.id)}
+              docked={true}
+            />
+          </div>
+        )}
+
+        {/* Right Column (Info Panel) - 25% */}
+        {selectedTicket && (
+          <div className="w-1/4 flex flex-col border-l border-gray-800 bg-slate-900 z-20">
+            <PlayerInfoPanel
+              customer={selectedTicket.customer}
+              onClose={() => setSelectedTicket(null)}
+              isstatic={true}
+            />
+          </div>
+        )}
+
       </main>
 
-      {/* Overlays */}
+      {/* Floating System (Only for non-docked) */}
       <ChatSystem
         ref={chatSystemRef}
         activeChats={activeChats}
+        dockedChatId={isDockMode && selectedTicket?.type === 'chat' ? selectedTicket.id : null}
         onCloseChat={handleEndSession}
         onChatFocus={handleWindowFocus}
         onConvertToTicket={handleConvertToTicket}

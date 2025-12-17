@@ -4,6 +4,7 @@ import ChatWindow from './ChatWindow';
 
 interface ChatSystemProps {
     activeChats: Ticket[];
+    dockedChatId?: string | null;
     onCloseChat: (chatId: string) => void;
     onChatFocus: (chat: Ticket) => void;
     onConvertToTicket: (chatId: string) => void;
@@ -26,6 +27,7 @@ interface WindowState {
 
 const ChatSystem = forwardRef<ChatSystemRef, ChatSystemProps>(({
     activeChats,
+    dockedChatId,
     onCloseChat,
     onChatFocus,
     onConvertToTicket
@@ -44,26 +46,53 @@ const ChatSystem = forwardRef<ChatSystemRef, ChatSystemProps>(({
             const startX = 20;
             const startY = 80;
 
-            const cols = Math.floor((width - 40) / (cardWidth + gap));
+            // const cols = Math.floor((width - 40) / (cardWidth + gap));
 
             setWindows(prev => {
                 const newWindows = { ...prev };
                 let visibleIndex = 0;
 
+                // Safe area bounds (padding)
+                const PADDING = 24;
+                // const HEADER_OFFSET = 80;
+
+                // Available area for grid
+                const safeWidth = width - (PADDING * 2);
+                // const safeHeight = window.innerHeight - HEADER_OFFSET - PADDING;
+
                 activeChats.forEach((chat) => {
-                    // Only organize visible windows
-                    // If a window is untracked (e.g. new), it will be added in useEffect
-                    // But if it exists and is hidden, we skip organizing it
                     if (newWindows[chat.id] && !newWindows[chat.id].visible) return;
 
-                    // If minimized, we generally don't move it in grid organize, 
-                    // or maybe we do want to restore it? 
-                    // Let's assume organize restores minimized windows too for cleaner grid
+                    // Calculate max columns based on available width
+                    const effectiveCols = Math.max(1, Math.floor(safeWidth / (cardWidth + gap)));
 
-                    const row = Math.floor(visibleIndex / cols);
-                    const col = visibleIndex % cols;
+                    const row = Math.floor(visibleIndex / effectiveCols);
+                    const col = visibleIndex % effectiveCols;
 
-                    // Init if missing (though useEffect handles this, safety check)
+                    const x = startX + (col * (cardWidth + gap));
+                    const y = startY + (row * (cardHeight + gap));
+
+                    // Clamp to screen bounds to prevent scrolling
+                    // If y exceeds view, start stacking with offset instead of growing down
+                    // Use a 'deck' pile strategy if we run out of vertical space? 
+                    // Or just let it cascade slightly but reset top?
+                    // User request: "without scrolling". 
+
+                    // Simple logic: if Y is too low, loop back to top with slight offset? 
+                    // Or just rely on the calculated grid which fits IF there are few windows.
+                    // If many windows, we must overlap.
+
+                    let finalX = x;
+                    let finalY = y;
+
+                    // Check if out of bounds vertically
+                    if (y + cardHeight > window.innerHeight) {
+                        // Reset to top with offset (Stacking mode)
+                        const stackIndex = Math.floor(visibleIndex / 10); // Arbitrary grouping
+                        finalX = startX + (stackIndex * 30);
+                        finalY = startY + (stackIndex * 30);
+                    }
+
                     const current = newWindows[chat.id] || {
                         id: chat.id,
                         x: 0,
@@ -75,10 +104,10 @@ const ChatSystem = forwardRef<ChatSystemRef, ChatSystemProps>(({
 
                     newWindows[chat.id] = {
                         ...current,
-                        x: startX + (col * (cardWidth + gap)),
-                        y: startY + (row * (cardHeight + gap)),
-                        minimized: false, // Restore if minimized
-                        visible: true // Ensure visible
+                        x: finalX,
+                        y: finalY,
+                        minimized: false,
+                        visible: true
                     };
                     visibleIndex++;
                 });
@@ -170,8 +199,18 @@ const ChatSystem = forwardRef<ChatSystemRef, ChatSystemProps>(({
 
     // Filter to only render visible windows
     // We check `windows[c.id]` first to ensure init has happened
-    const activeWindows = activeChats.filter(c => windows[c.id] && windows[c.id].visible && !windows[c.id].minimized);
-    const minimizedWindows = activeChats.filter(c => windows[c.id] && windows[c.id].visible && windows[c.id].minimized);
+    const activeWindows = activeChats.filter(c =>
+        windows[c.id] &&
+        windows[c.id].visible &&
+        !windows[c.id].minimized &&
+        c.id !== dockedChatId
+    );
+    const minimizedWindows = activeChats.filter(c =>
+        windows[c.id] &&
+        windows[c.id].visible &&
+        windows[c.id].minimized &&
+        c.id !== dockedChatId
+    );
 
     if (activeChats.length === 0) return null;
 
