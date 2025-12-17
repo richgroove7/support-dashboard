@@ -1,0 +1,196 @@
+[
+    {
+        "id": "CHT-8821",
+        "type": "chat",
+        "title": "Deposit not showing up",
+        "description": "I made a deposit 10 minutes ago via Crypto but balance is still 0.",
+        "status": "in_progress",
+        "priority": "critical",
+        "category": "Billing",
+        "customer": {
+            "id": "USR-101",
+            "name": "Sarah Johnson",
+            "email": "sarah.j@example.com",
+            "avatar": "SJ",
+            "country": "UK",
+            "vipLevel": "Platinum",
+            "balance": 25400.50,
+            "lastGame": "Mega Moolah",
+            "lastActivity": "2025-12-16T22:55:00Z",
+            "hasDepositIssue": true
+        },
+        "assignee": {
+            "name": "Mike Chen",
+            "avatar": "MC"
+        },
+        "created": "2025-12-16T22:45:00Z",
+        "updated": "2025-12-16T22:50:00Z",
+        "waitingTime": "5m",
+        "messages": 12
+    },
+    {
+        "id": "CHT-8822",
+        "type": "chat",
+        "title": "Game frozen during bonus round",
+        "description": "Sweet Bonanza froze right when I got the multipliers!",
+        "status": "open",
+        "priority": "high",
+        "category": "Game Issue",
+        "customer": {
+            "id": "USR-102",
+            "name": "David Martinez",
+            "email": "d.martinez@example.com",
+            "avatar": "DM",
+            "country": "ES",
+            "vipLevel": "Gold",
+            "balance": 1250.00,
+            "lastGame": "Sweet Bonanza",
+            "lastActivity": "2025-12-16T22:58:00Z",
+            "hasDepositIssue": false
+        },
+        "assignee": null,
+        "created": "2025-12-16T22:56:00Z",
+        "updated": "2025-12-16T22:56:00Z",
+        "waitingTime": "2m",
+        "messages": 3
+    },
+    {
+        "id": "TKT-4001",
+        "type": "ticket",
+        "title": "Verification documents pending",
+        "description": "Uploaded my ID 2 days ago, still pending verification.",
+        "status": "open",
+        "priority": "medium",
+        "category": "KYC",
+        "customer": {
+            "id": "USR-103",
+            "name": "Alex Thompson",
+            "email": "alex.t@example.com",
+            "avatar": "AT",
+            "country": "CA",
+            "vipLevel": "Bronze",
+            "balance": 50.00,
+            "lastGame": "Blackjack",
+            "lastActivity": "2025-12-15T10:00:00Z",
+            "hasDepositIssue": false
+        },
+        "assignee": null,
+        "created": "2025-12-14T14:20:00Z",
+        "updated": "2025-12-14T14:20:00Z",
+        "waitingTime": "48h",
+        "messages": 1
+    },
+    {
+        "id": "CHT-8823",
+        "type": "chat",
+        "title": "VIP Bonus Inquiry",
+        "description": "When do I get my weekly cashback?",
+        "status": "in_progress",
+        "priority": "low",
+        "category": "Bonus",
+        "customer": {
+            "id": "USR-104",
+            "name": "Jennifer Lee",
+            "email": "j.lee@example.com",
+            "avatar": "JL",
+            "country": "SG",
+            "vipLevel": "Diamond",
+            "balance": 150000.00,
+            "lastGame": "Baccarat Live",
+            "lastActivity": "2025-12-16T22:50:00Z",
+            "hasDepositIssue": false
+        },
+        "assignee": {
+            "name": "Mike Chen",
+            "avatar": "MC"
+        },
+        "created": "2025-12-16T22:40:00Z",
+        "updated": "2025-12-16T22:42:00Z",
+        "waitingTime": "0m",
+        "messages": 8
+    },
+    {
+        "id": "TKT-4002",
+        "type": "ticket",
+        "title": "Withdrawal delay",
+        "description": "Withdrawal #9921 is stuck in processing for 3 days.",
+        "status": "resolved",
+        "priority": "high",
+        "category": "Finance",
+        "customer": {
+            "id": "USR-105",
+            "name": "Robert Brown",
+            "email": "r.brown@example.com",
+            "avatar": "RB",
+            "country": "AU",
+            "vipLevel": "Silver",
+            "balance": 450.25,
+            "lastGame": "Roulette",
+            "lastActivity": "2025-12-16T09:30:00Z",
+            "hasDepositIssue": true
+        },
+        "assignee": {
+            "name": "Emily Watson",
+            "avatar": "EW"
+        },
+        "created": "2025-12-13T11:00:00Z",
+        "updated": "2025-12-16T15:00:00Z",
+        "waitingTime": "0m",
+        "messages": 5
+    },
+    {
+        "id": "CHT-8824",
+        "type": "chat",
+        "title": "Login issues from mobile",
+        "description": "App crashes when I try to login.",
+        "status": "open",
+        "priority": "critical",
+        "category": "Technical",
+        "customer": {
+            "id": "USR-106",
+            "name": "Lisa Anderson",
+            "email": "lisa.a@example.com",
+            "avatar": "LA",
+            "country": "US",
+            "vipLevel": "Silver",
+            "balance": 85.00,
+            "lastGame": "Book of Dead",
+            "lastActivity": "2025-12-16T22:59:00Z",
+            "hasDepositIssue": false
+        },
+        "assignee": null,
+        "created": "2025-12-16T22:58:30Z",
+        "updated": "2025-12-16T22:58:30Z",
+        "waitingTime": "30s",
+        "messages": 1
+    },
+    {
+        "id": "CHT-8825",
+        "type": "chat",
+        "title": "Account verification help",
+        "description": "I need help understanding which documents to upload.",
+        "status": "resolved",
+        "priority": "low",
+        "category": "KYC",
+        "customer": {
+            "id": "USR-107",
+            "name": "Tom Wilson",
+            "email": "t.wilson@example.com",
+            "avatar": "TW",
+            "country": "NZ",
+            "vipLevel": "Bronze",
+            "balance": 0.00,
+            "lastGame": "None",
+            "lastActivity": "2025-12-15T10:00:00Z",
+            "hasDepositIssue": false
+        },
+        "assignee": {
+            "name": "Mike Chen",
+            "avatar": "MC"
+        },
+        "created": "2025-12-15T09:00:00Z",
+        "updated": "2025-12-15T09:30:00Z",
+        "waitingTime": "0m",
+        "messages": 15
+    }
+]
