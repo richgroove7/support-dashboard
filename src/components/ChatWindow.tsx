@@ -7,7 +7,10 @@ import {
     RefreshCw,
     History,
     GripHorizontal,
-    Trash2
+    Trash2,
+    Smile,
+    MessageSquareQuote,
+    UserPlus
 } from 'lucide-react';
 import { Ticket as TicketModel } from '../types';
 
@@ -59,6 +62,18 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     const [messages, setMessages] = useState<{ id: string; text: string; sender: 'me' | 'customer'; time: string }[]>([
         { id: '1', text: chat.description, sender: 'customer', time: chat.created.split('T')[1].substring(0, 5) }
     ]);
+    const [showShortcuts, setShowShortcuts] = useState(false);
+    const [showEmojis, setShowEmojis] = useState(false);
+
+    const shortcuts = [
+        "Hello! How can I help you today?",
+        "I'm checking your account details now.",
+        "Could you please provide the transaction ID?",
+        "Your withdrawal is being processed.",
+        "Is there anything else I can assist you with?"
+    ];
+
+    const emojis = ["😊", "👍", "👋", "💰", "🎰", "🎉", "🙏", "⏳"];
     const scrollRef = useRef<HTMLDivElement>(null);
 
     // Scroll to bottom
@@ -227,6 +242,27 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             style={activeStyle}
             onMouseDown={() => !isActive && onFocus()}
         >
+            {/* Shortcuts Panel - Left Sidebar */}
+            {showShortcuts && (
+                <div className="absolute right-full mr-2 top-0 bottom-0 w-48 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-3 animate-slide-in-right z-50">
+                    <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-800">
+                        <MessageSquareQuote className="w-4 h-4 text-blue-400" />
+                        <span className="text-xs font-bold text-white">Shortcuts</span>
+                    </div>
+                    <div className="space-y-2 overflow-y-auto max-h-[calc(100%-40px)]">
+                        {shortcuts.map((s, i) => (
+                            <button
+                                key={i}
+                                onClick={() => { setMessage(prev => prev + s); setShowShortcuts(false); }}
+                                className="w-full text-left p-2 bg-slate-800/50 hover:bg-slate-700 rounded text-[11px] text-gray-300 transition-colors border border-transparent hover:border-blue-500/30"
+                            >
+                                {s}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* Header */}
             <div
                 className={`h-10 rounded-t-xl flex items-center justify-between px-3 border-b border-slate-700 flex-shrink-0 select-none ${isActive ? 'bg-slate-800' : 'bg-slate-800/50'
@@ -250,6 +286,20 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                             <Trash2 className="w-3.5 h-3.5" />
                         </button>
                     )}
+                    <div className="w-px h-3 bg-gray-700 mx-1"></div>
+                    <button
+                        onClick={() => setShowShortcuts(!showShortcuts)}
+                        className={`p-1 hover:bg-slate-700 rounded text-gray-400 hover:text-blue-400 transition-colors ${showShortcuts ? 'text-blue-400' : ''}`}
+                        title="Shortcuts"
+                    >
+                        <MessageSquareQuote className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                        className="p-1 hover:bg-slate-700 rounded text-gray-400 hover:text-green-400 transition-colors"
+                        title="Assign to Agent"
+                    >
+                        <UserPlus className="w-3.5 h-3.5" />
+                    </button>
                     <div className="w-px h-3 bg-gray-700 mx-1"></div>
                     <button onClick={onMinimize} className="p-1 hover:bg-slate-700 rounded text-gray-400 transition-colors">
                         <Minimize2 className="w-3.5 h-3.5" />
@@ -325,14 +375,35 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                     </button>
                 ) : (
                     <div className="relative">
+                        {showEmojis && (
+                            <div className="absolute bottom-full mb-2 left-0 bg-slate-800 border border-slate-700 rounded-lg p-2 shadow-2xl flex gap-1 z-50">
+                                {emojis.map((e, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => { setMessage(prev => prev + e); setShowEmojis(false); }}
+                                        className="p-1 hover:bg-slate-700 rounded text-lg"
+                                    >
+                                        {e}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
                         <input
                             type="text"
                             value={message}
                             onChange={(e) => setMessage(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                             placeholder="Type message..."
-                            className="w-full bg-slate-800 text-white rounded-lg pl-3 pr-9 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 border border-slate-700 placeholder-gray-600"
+                            className="w-full bg-slate-800 text-white rounded-lg pl-9 pr-9 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 border border-slate-700 placeholder-gray-600"
                         />
+                        <div className="absolute left-2 top-1/2 -translate-y-1/2">
+                            <button
+                                onClick={() => setShowEmojis(!showEmojis)}
+                                className="p-1 text-gray-500 hover:text-yellow-400 transition-colors"
+                            >
+                                <Smile className="w-4 h-4" />
+                            </button>
+                        </div>
                         <div className="absolute right-2 top-1/2 -translate-y-1/2">
                             <button
                                 onClick={handleSendMessage}

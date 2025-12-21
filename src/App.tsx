@@ -4,6 +4,9 @@ import {
   Bell,
   LayoutGrid,
   X,
+  Volume2,
+  VolumeX,
+  Zap
 } from 'lucide-react';
 import TicketRow from './components/TicketRow';
 import FiltersBar from './components/FiltersBar';
@@ -32,10 +35,15 @@ for (let i = 0; i < 30; i++) {
 function App() {
   // const { isAuthenticated, isLoading } = useAuth();
 
+  const [tickets, setTickets] = useState<Ticket[]>(ticketsData);
+
   const [filterState, setFilterState] = useState({
     vipOnly: false,
     realtimeOnly: false,
     depositIssues: false,
+    signupsOnly: false,
+    trafficSource: 'all',
+    playerStatus: 'all',
     status: 'all'
   });
   const [searchQuery, setSearchQuery] = useState('');
@@ -43,10 +51,12 @@ function App() {
   // State for features
   // Initialize with some "waiting" chats
   const [activeChats, setActiveChats] = useState<Ticket[]>(() => {
-    return ticketsData.filter(t => t.type === 'chat' && t.status !== 'resolved').slice(0, 3);
+    return tickets.filter(t => t.type === 'chat' && t.status !== 'resolved').slice(0, 3);
   });
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [hoveredChatId, setHoveredChatId] = useState<string | null>(null);
+  const [unreadMessages, setUnreadMessages] = useState<Record<string, number>>({});
+  const [soundEnabled, setSoundEnabled] = useState(true);
   const chatSystemRef = useRef<ChatSystemRef>(null);
 
   // Derived state for panel open
@@ -55,24 +65,29 @@ function App() {
   // Calculate stats
   const stats = useMemo(() => {
     return {
-      all: ticketsData.length,
-      vip: ticketsData.filter(t => t.customer.vipLevel !== 'Bronze').length,
-      issues: ticketsData.filter(t => t.customer.hasDepositIssue).length,
-      online: ticketsData.filter(t => {
+      all: tickets.length,
+      vip: tickets.filter(t => t.customer.vipLevel !== 'Bronze').length,
+      issues: tickets.filter(t => t.customer.hasDepositIssue).length,
+      online: tickets.filter(t => {
         const lastActive = new Date(t.customer.lastActivity).getTime();
         const now = new Date('2025-12-16T23:00:00Z').getTime(); // Simul mock time
         return (now - lastActive) < 15 * 60 * 1000; // Active in last 15m
       }).length,
-      resolved: ticketsData.filter(t => t.status === 'resolved').length
+      resolved: tickets.filter(t => t.status === 'resolved').length,
+      signups: tickets.filter(t => {
+        const created = new Date(t.created).getTime();
+        const now = new Date('2025-12-16T23:00:00Z').getTime();
+        return (now - created) < 24 * 60 * 60 * 1000; // Signed up in last 24h
+      }).length
     };
-  }, []);
+  }, [tickets]);
 
   // Dock mode state
   const [isDockMode, setIsDockMode] = useState(false);
 
   // Filter logic
   const filteredTickets = useMemo(() => {
-    return ticketsData.filter(ticket => {
+    return tickets.filter(ticket => {
       // 1. Search
       const matchesSearch =
         ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -96,15 +111,48 @@ function App() {
         if ((now - lastActive) > 15 * 60 * 1000) return false;
       }
 
+      // 6. Signups Only
+      if (filterState.signupsOnly) {
+        const created = new Date(ticket.created).getTime();
+        const now = new Date('2025-12-16T23:00:00Z').getTime();
+        if ((now - created) > 24 * 60 * 60 * 1000) return false;
+      }
+
+      // 7. Traffic Source
+      if (filterState.trafficSource !== 'all' && ticket.customer.trafficSource !== filterState.trafficSource) {
+        return false;
+      }
+
+      // 8. Player Status
+      if (filterState.playerStatus !== 'all') {
+        const level = ticket.customer.vipLevel;
+        switch (filterState.playerStatus) {
+          case 'vip': if (level === 'Bronze') return false; break;
+          case 'blocked': if (ticket.customer.fraudRestrictions !== 'Blocked') return false; break;
+          case 'bonus_abuser': if (!ticket.customer.bonusAbuse) return false; break;
+          case 'self_excluded': if (ticket.customer.fraudRestrictions !== 'Self Excluded') return false; break;
+          case 'active': if (ticket.status === 'resolved') return false; break;
+        }
+      }
+
       return true;
     }).sort((a, b) => {
-      // Sort by priority first if critical
+      // 1. Prioritize Open tickets waiting >= 3 minutes
+      const aWaitMins = parseInt(a.waitingTime.split(':')[0]) || 0;
+      const bWaitMins = parseInt(b.waitingTime.split(':')[0]) || 0;
+      const aIsOverdue = a.status === 'open' && aWaitMins >= 3;
+      const bIsOverdue = b.status === 'open' && bWaitMins >= 3;
+
+      if (aIsOverdue && !bIsOverdue) return -1;
+      if (!aIsOverdue && bIsOverdue) return 1;
+
+      // 2. Sort by priority first if critical
       if (a.priority === 'critical' && b.priority !== 'critical') return -1;
       if (b.priority === 'critical' && a.priority !== 'critical') return 1;
       // Then by updated time desc
       return new Date(b.updated).getTime() - new Date(a.updated).getTime();
     });
-  }, [filterState, searchQuery]);
+  }, [tickets, filterState, searchQuery]);
 
   const handleTicketClick = (ticket: Ticket) => {
     // Only set selected ticket for info panel, don't open chat
@@ -123,6 +171,40 @@ function App() {
       }
       // Also show info
       setSelectedTicket(ticket);
+    }
+  };
+
+  const handleAssignAgent = (ticketId: string, agentName: string | null) => {
+    setTickets(prev => prev.map(t => {
+      if (t.id === ticketId) {
+        return {
+          ...t,
+          assignee: agentName ? { name: agentName, avatar: agentName.substring(0, 2).toUpperCase() } : null,
+          assignedToAgentId: agentName ? `agent-${agentName.length}` : null // Mock agent ID
+        };
+      }
+      return t;
+    }));
+
+    // Update active chat if it exists
+    setActiveChats(prev => prev.map(t => {
+      if (t.id === ticketId) {
+        return {
+          ...t,
+          assignee: agentName ? { name: agentName, avatar: agentName.substring(0, 2).toUpperCase() } : null,
+          assignedToAgentId: agentName ? `agent-${agentName.length}` : null
+        };
+      }
+      return t;
+    }));
+
+    // Update selected ticket if it matches
+    if (selectedTicket?.id === ticketId) {
+      setSelectedTicket(prev => prev ? {
+        ...prev,
+        assignee: agentName ? { name: agentName, avatar: agentName.substring(0, 2).toUpperCase() } : null,
+        assignedToAgentId: agentName ? `agent-${agentName.length}` : null
+      } : null);
     }
   };
 
@@ -162,6 +244,29 @@ function App() {
   const handleConvertToTicket = (chatId: string) => {
     console.log("Converting chat to ticket:", chatId);
     // Logic to convert would go here
+  };
+
+  const playNotificationSound = () => {
+    if (!soundEnabled) return;
+    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
+    audio.volume = 0.3;
+    audio.play().catch(e => console.log("Sound play failed:", e));
+  };
+
+  const handleNewMessage = (chatId: string) => {
+    if (selectedTicket?.id === chatId) return; // Don't mark as unread if open
+
+    setUnreadMessages(prev => ({
+      ...prev,
+      [chatId]: (prev[chatId] || 0) + 1
+    }));
+    playNotificationSound();
+  };
+
+  const handleSimulateMessage = () => {
+    if (activeChats.length === 0) return;
+    const randomChat = activeChats[Math.floor(Math.random() * activeChats.length)];
+    handleNewMessage(randomChat.id);
   };
 
   // Logic for List Column Width
@@ -211,6 +316,14 @@ function App() {
                 <span className="hidden sm:inline">Grid</span>
               </button>
               <button
+                onClick={handleSimulateMessage}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-600/20 text-amber-400 border-amber-500/50 hover:bg-amber-600/30 rounded-lg text-xs font-medium transition-colors border"
+                title="Simulate Event"
+              >
+                <Zap className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Simulate</span>
+              </button>
+              <button
                 onClick={handleCloseAll}
                 className="px-3 py-1.5 bg-slate-800 hover:bg-red-900/20 text-red-400 rounded-lg text-xs font-medium transition-colors border border-slate-700"
               >
@@ -221,6 +334,13 @@ function App() {
         </div>
 
         <div className="flex items-center gap-4">
+          <button
+            onClick={() => setSoundEnabled(!soundEnabled)}
+            className={`p-2 rounded-lg hover:bg-slate-800 transition-colors ${soundEnabled ? 'text-blue-400' : 'text-gray-500'}`}
+            title={soundEnabled ? "Mute Sounds" : "Unmute Sounds"}
+          >
+            {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+          </button>
           <button className="relative p-2 rounded-lg hover:bg-slate-800 transition-colors">
             <Bell className="w-5 h-5 text-gray-400" />
             <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-slate-900"></span>
@@ -272,14 +392,25 @@ function App() {
                       >
                         {/* Chip */}
                         <button
-                          onClick={() => handleRestoreChat(chat)}
-                          className={`flex items-center gap-2 px-3 py-1.5 border hover:border-blue-500 rounded text-xs transition-all group-hover:shadow-md ${selectedTicket?.id === chat.id
+                          onClick={() => {
+                            handleRestoreChat(chat);
+                            setUnreadMessages(prev => ({ ...prev, [chat.id]: 0 }));
+                          }}
+                          className={`flex items-center gap-2 px-3 py-1.5 border hover:border-blue-500 rounded text-xs transition-all group-hover:shadow-md relative overflow-hidden ${selectedTicket?.id === chat.id
                             ? 'bg-blue-600/20 border-blue-500 text-white'
-                            : 'bg-slate-800 border-slate-600 text-gray-300 hover:text-white'
+                            : unreadMessages[chat.id] > 0
+                              ? 'bg-blue-900/40 border-blue-400 text-blue-100 animate-pulse'
+                              : 'bg-slate-800 border-slate-600 text-gray-300 hover:text-white'
                             }`}
                         >
-                          <div className={`w-1.5 h-1.5 rounded-full ${chat.status === 'resolved' ? 'bg-gray-500' : 'bg-green-500 animate-pulse'}`}></div>
+                          {unreadMessages[chat.id] > 0 && (
+                            <div className="absolute top-0 right-0 w-2 h-2 bg-blue-500 animate-ping"></div>
+                          )}
+                          <div className={`w-1.5 h-1.5 rounded-full ${chat.status === 'resolved' ? 'bg-gray-500' : unreadMessages[chat.id] > 0 ? 'bg-blue-400' : 'bg-green-500 animate-pulse'}`}></div>
                           <span className="max-w-[120px] truncate">{chat.customer.name}</span>
+                          {unreadMessages[chat.id] > 0 && (
+                            <span className="bg-blue-600 text-[10px] px-1 rounded-full">{unreadMessages[chat.id]}</span>
+                          )}
                           <span
                             className="ml-1 p-0.5 rounded hover:bg-slate-700 text-gray-500 hover:text-red-400 opacity-60 hover:opacity-100 transition-opacity"
                             title="End Session"
@@ -320,6 +451,7 @@ function App() {
                 <div className="flex-1 min-w-[200px]">Subject</div>
                 <div className="w-24">Status</div>
                 <div className="w-24 hidden lg:block">Wait Time</div>
+                <div className="w-32">Live</div>
                 <div className="w-8"></div>
               </div>
 
@@ -333,6 +465,7 @@ function App() {
                     isHovered={hoveredChatId === ticket.id}
                     onClick={handleTicketClick}
                     onChatClick={(e) => handleChatIconClick(e, ticket)}
+                    onAssignAgent={handleAssignAgent}
                   />
                 ))}
 
@@ -367,6 +500,8 @@ function App() {
             <PlayerInfoPanel
               customer={selectedTicket.customer}
               onClose={() => setSelectedTicket(null)}
+              onAssignAgent={(agentName) => handleAssignAgent(selectedTicket.id, agentName)}
+              currentAssigneeName={selectedTicket.assignee?.name}
               isstatic={true}
             />
           </div>

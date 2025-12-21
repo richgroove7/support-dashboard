@@ -7,7 +7,10 @@ import {
     Calendar,
     Tag,
     Shield,
-    Crown
+    Crown,
+    Smile,
+    MessageSquareQuote,
+    UserPlus
 } from 'lucide-react';
 import { Ticket as TicketModel } from '../types';
 
@@ -30,6 +33,18 @@ const ChatView: React.FC<ChatViewProps> = ({
     const [messages, setMessages] = useState<{ id: string; text: string; sender: 'me' | 'customer'; time: string }[]>([
         { id: '1', text: chat.description, sender: 'customer', time: chat.created.split('T')[1].substring(0, 5) }
     ]);
+    const [showShortcuts, setShowShortcuts] = useState(false);
+    const [showEmojis, setShowEmojis] = useState(false);
+
+    const shortcuts = [
+        "Hello! How can I help you today?",
+        "I'm checking your account details now.",
+        "Could you please provide the transaction ID?",
+        "Your withdrawal is being processed.",
+        "Is there anything else I can assist you with?"
+    ];
+
+    const emojis = ["😊", "👍", "👋", "💰", "🎰", "🎉", "🙏", "⏳"];
     const scrollRef = useRef<HTMLDivElement>(null);
 
     // Scroll to bottom on new message
@@ -140,6 +155,59 @@ const ChatView: React.FC<ChatViewProps> = ({
                         </button>
                     ) : (
                         <div className="max-w-4xl mx-auto relative">
+                            {showShortcuts && (
+                                <div className="absolute bottom-full mb-2 left-0 w-64 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-3 animate-slide-in-top z-50">
+                                    <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-800">
+                                        <div className="flex items-center gap-2">
+                                            <MessageSquareQuote className="w-4 h-4 text-blue-400" />
+                                            <span className="text-xs font-bold text-white">Quick Responses</span>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                                        {shortcuts.map((s, i) => (
+                                            <button
+                                                key={i}
+                                                onClick={() => { setMessage(prev => prev + s); setShowShortcuts(false); }}
+                                                className="w-full text-left p-2 bg-slate-800/50 hover:bg-slate-700 rounded text-xs text-gray-300 transition-colors border border-transparent hover:border-blue-500/30"
+                                            >
+                                                {s}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {showEmojis && (
+                                <div className="absolute bottom-full mb-2 right-12 bg-slate-800 border border-slate-700 rounded-lg p-2 shadow-2xl flex gap-1 z-50">
+                                    {emojis.map((e, i) => (
+                                        <button
+                                            key={i}
+                                            onClick={() => { setMessage(prev => prev + e); setShowEmojis(false); }}
+                                            className="p-1 hover:bg-slate-700 rounded text-xl"
+                                        >
+                                            {e}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
+                            <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                                <button
+                                    onClick={() => setShowShortcuts(!showShortcuts)}
+                                    className={`p-2 hover:bg-slate-700 rounded-lg transition-colors ${showShortcuts ? 'text-blue-400' : 'text-slate-400'}`}
+                                    title="Shortcuts"
+                                >
+                                    <MessageSquareQuote className="w-5 h-5" />
+                                </button>
+                                <button
+                                    onClick={() => setShowEmojis(!showEmojis)}
+                                    className={`p-2 hover:bg-slate-700 rounded-lg transition-colors ${showEmojis ? 'text-yellow-400' : 'text-slate-400'}`}
+                                    title="Emojis"
+                                >
+                                    <Smile className="w-5 h-5" />
+                                </button>
+                            </div>
+
                             <input
                                 type="text"
                                 value={message}
@@ -147,7 +215,7 @@ const ChatView: React.FC<ChatViewProps> = ({
                                 onChange={(e) => setMessage(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                                 placeholder="Type a message to reply..."
-                                className="w-full bg-slate-800 text-white rounded-xl pl-5 pr-12 py-4 text-base focus:outline-none focus:ring-2 focus:ring-blue-500/50 border border-slate-700 placeholder-slate-500 shadow-xl"
+                                className="w-full bg-slate-800 text-white rounded-xl pl-24 pr-12 py-4 text-base focus:outline-none focus:ring-2 focus:ring-blue-500/50 border border-slate-700 placeholder-slate-500 shadow-xl"
                             />
                             <div className="absolute right-3 top-1/2 -translate-y-1/2">
                                 <button

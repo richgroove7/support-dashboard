@@ -5,7 +5,8 @@ import {
     AlertCircle,
     Clock,
     MoreHorizontal,
-    DollarSign
+    DollarSign,
+    User
 } from 'lucide-react';
 import { Ticket } from '../types';
 
@@ -15,9 +16,10 @@ interface TicketRowProps {
     isHovered?: boolean;
     onClick: (ticket: Ticket) => void;
     onChatClick: (e: React.MouseEvent) => void;
+    onAssignAgent: (ticketId: string, agentName: string | null) => void;
 }
 
-const TicketRow: React.FC<TicketRowProps> = ({ ticket, isActiveSession, isHovered, onClick, onChatClick }) => {
+const TicketRow: React.FC<TicketRowProps> = ({ ticket, isActiveSession, isHovered, onClick, onChatClick, onAssignAgent }) => {
     const getPriorityColor = (priority: string) => {
         switch (priority) {
             case 'critical': return 'text-red-400';
@@ -63,16 +65,44 @@ const TicketRow: React.FC<TicketRowProps> = ({ ticket, isActiveSession, isHovere
         }
     };
 
+    const getRowBgColor = () => {
+        if (isActiveSession) return 'bg-blue-600/10 shadow-inner';
+        if (ticket.customer.hasDepositIssue) return 'bg-red-500/5 hover:bg-red-500/10';
+        if (ticket.customer.vipLevel === 'Diamond' || ticket.customer.vipLevel === 'Platinum') return 'bg-cyan-500/5 hover:bg-cyan-500/10';
+        return 'hover:bg-slate-800/50';
+    };
+
+    const getAssignedToText = () => {
+        return (
+            <div className="flex items-center gap-1.5 min-w-0" onClick={(e) => e.stopPropagation()}>
+                <div className="w-5 h-5 rounded-full bg-slate-700 flex items-center justify-center border border-slate-600 flex-shrink-0">
+                    <User className="w-3 h-3 text-slate-400" />
+                </div>
+                <select
+                    value={ticket.assignee?.name || 'Unassigned'}
+                    onChange={(e) => onAssignAgent(ticket.id, e.target.value === 'Unassigned' ? null : e.target.value)}
+                    className="bg-transparent text-gray-300 text-xs focus:outline-none cursor-pointer truncate hover:text-white transition-colors max-w-[100px]"
+                >
+                    <option value="Unassigned" className="bg-slate-900">Unassigned</option>
+                    <option value="AI Agent" className="bg-slate-900">AI Agent</option>
+                    <option value="Mike Chen" className="bg-slate-900">Mike Chen</option>
+                    <option value="Emily Watson" className="bg-slate-900">Emily Watson</option>
+                    <option value="Alex Morgan" className="bg-slate-900">Alex Morgan</option>
+                </select>
+            </div>
+        );
+    };
+
     return (
         <div
             onClick={() => onClick(ticket)}
-            className={`group flex items-center gap-4 p-3 border-b border-gray-800 cursor-pointer transition-all text-sm relative ${isActiveSession ? 'bg-blue-900/5' : 'hover:bg-slate-800/50'
-                } ${isHovered ? 'bg-slate-800/80 ring-1 ring-inset ring-blue-500/30' : ''}`}
+            className={`group flex items-center gap-4 p-3 border-b border-gray-800 cursor-pointer transition-all text-sm relative ${getRowBgColor()} 
+                ${isHovered ? 'ring-1 ring-inset ring-blue-500/30' : ''}`}
         >
             {/* Active Indicator Bar (Removed per new request, replaced by LED) */}
             {/* Priority & Type */}
-            <div className="w-16 flex items-center justify-center gap-2">
-                <AlertCircle className={`w-4 h-4 ${getPriorityColor(ticket.priority)}`} />
+            <div className="w-16 flex items-center justify-center gap-2 relative">
+                <AlertCircle className={`w-4 h-4 ${getPriorityColor(ticket.priority)} ${ticket.status === 'open' && (parseInt(ticket.waitingTime.split(':')[0]) >= 3) ? 'animate-pulse text-red-500 scale-125' : ''}`} />
                 {getTypeIcon(ticket.type)}
             </div>
 
@@ -128,9 +158,48 @@ const TicketRow: React.FC<TicketRowProps> = ({ ticket, isActiveSession, isHovere
 
             {/* Status */}
             <div className="w-24">
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(ticket.status)}`}>
+                <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getStatusColor(ticket.status)}`}>
                     {ticket.status.replace('_', ' ')}
                 </span>
+            </div>
+
+            {/* Assigned To */}
+            <div className="w-32 hidden xl:block min-w-0">
+                {getAssignedToText()}
+            </div>
+
+            {/* Live Indication */}
+            <div className="w-32 text-xs">
+                {ticket.typingStatus === 'user' && (
+                    <div className="flex items-center gap-1.5 text-blue-400">
+                        <span className="flex gap-0.5">
+                            <span className="w-1 h-1 bg-current rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                            <span className="w-1 h-1 bg-current rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                            <span className="w-1 h-1 bg-current rounded-full animate-bounce"></span>
+                        </span>
+                        <span className="italic">user typing</span>
+                    </div>
+                )}
+                {ticket.typingStatus === 'agent' && (
+                    <div className="flex items-center gap-1.5 text-green-400">
+                        <span className="flex gap-0.5">
+                            <span className="w-1 h-1 bg-current rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                            <span className="w-1 h-1 bg-current rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                            <span className="w-1 h-1 bg-current rounded-full animate-bounce"></span>
+                        </span>
+                        <span className="italic">agent typing</span>
+                    </div>
+                )}
+                {ticket.typingStatus === 'ai' && (
+                    <div className="flex items-center gap-1.5 text-purple-400">
+                        <span className="flex gap-0.5">
+                            <span className="w-1 h-1 bg-current rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                            <span className="w-1 h-1 bg-current rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                            <span className="w-1 h-1 bg-current rounded-full animate-bounce"></span>
+                        </span>
+                        <span className="italic">ai typing</span>
+                    </div>
+                )}
             </div>
 
             {/* Waiting Time */}
